@@ -10,10 +10,6 @@ import type { Router } from '.'
 
 import './poliyfills'
 
-const wsClient = createWSClient({
-    url: `ws://0.0.0.0:8080/trpc`
-})
-
 const client = createTRPCProxyClient<Router>({
     links: [
         // call subscriptions through websockets and the rest over http
@@ -22,7 +18,9 @@ const client = createTRPCProxyClient<Router>({
                 return op.type === 'subscription'
             },
             true: wsLink({
-                client: wsClient
+                client: createWSClient({
+                    url: `ws://0.0.0.0:8080/trpc`
+                })
             }),
             false: httpLink({
                 url: `http://0.0.0.0:8080/trpc`

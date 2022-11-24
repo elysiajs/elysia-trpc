@@ -11,6 +11,8 @@ const client = createTRPCProxyClient<Router>({
 
 async function main() {
     const result = await client.mirror.query((Math.random() * 10000).toString())
+
+    console.log(`Sent ${result}`)
 }
 
 main()

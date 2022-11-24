@@ -7,17 +7,15 @@ import { observable } from '@trpc/server/observable'
 import { EventEmitter } from 'stream'
 
 const p = initTRPC.create()
-const publicProcedure = p.procedure
-
 const ee = new EventEmitter()
 
 const router = p.router({
-    mirror: publicProcedure.input(c(t.String())).query(({ input }) => {
+    mirror: p.procedure.input(c(t.String())).query(({ input }) => {
         ee.emit('listen', input)
 
         return input
     }),
-    listen: publicProcedure.subscription(() =>
+    listen: p.procedure.subscription(() =>
         observable<string>((emit) => {
             ee.on('listen', (input) => {
                 emit.next(input)
@@ -32,4 +30,6 @@ new KingWorld()
     .use(websocket())
     .get('/', () => 'tRPC')
     .trpc(router)
-    .listen(8080)
+    .listen(8080, ({ hostname, port }) => {
+        console.log(`🦊 running at http://${hostname}:${port}`)
+    })
