@@ -1,46 +1,35 @@
 import { KingWorld, t } from 'kingworld'
-import { compile as c } from '../src/index'
 import { websocket } from '@kingworldjs/websocket'
+import { compile as c } from '../src'
 
 import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
+import { EventEmitter } from 'stream'
 
-import EventEmitter from 'events'
-
-const r = initTRPC.create()
-const p = r.procedure
+const p = initTRPC.create()
+const publicProcedure = p.procedure
 
 const ee = new EventEmitter()
 
-const router = r.router({
-    greet: p.input(c(t.String())).query(({ input }) => {
-        ee.emit('a', input)
+const router = p.router({
+    mirror: publicProcedure.input(c(t.String())).query(({ input }) => {
+        ee.emit('listen', input)
 
         return input
     }),
-    signIn: p
-        .input(
-            c(
-                t.Object({
-                    username: t.String(),
-                    password: t.String()
-                })
-            )
-        )
-        .mutation(({ input }) => input),
-    k: p.subscription(() => {
-        return observable<string>((emit) => {
-            ee.on('a', (input) => {
+    listen: publicProcedure.subscription(() =>
+        observable<string>((emit) => {
+            ee.on('listen', (input) => {
                 emit.next(input)
             })
-
-            return () => {
-                console.log('Unsubscribe')
-            }
         })
-    })
+    )
 })
 
 export type Router = typeof router
 
-const app = new KingWorld().use(websocket()).trpc(router).listen(8080)
+new KingWorld()
+    .use(websocket())
+    .get('/', () => 'tRPC')
+    .trpc(router)
+    .listen(8080)

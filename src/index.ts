@@ -110,8 +110,6 @@ KingWorld.prototype.trpc = function (
 
                     observer = result.subscribe({
                         next(data) {
-                            console.log('Listener', ws.data.id)
-
                             ws.send(
                                 JSON.stringify(
                                     transformTRPCResponse(router, {

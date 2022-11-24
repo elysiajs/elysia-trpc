@@ -8,12 +8,7 @@ import {
 } from '@trpc/client'
 import type { Router } from '.'
 
-// import fetch from 'node-fetch'
-import ws from 'ws'
-
-// polyfill fetch & websocket
-const globalAny = global as any
-globalAny.WebSocket = ws
+import './poliyfills'
 
 const wsClient = createWSClient({
     url: `ws://0.0.0.0:8080/trpc`
@@ -37,12 +32,7 @@ const client = createTRPCProxyClient<Router>({
 })
 
 async function main() {
-    // await client.signIn.mutate({
-    //     username: 'A',
-    //     password: 'B'
-    // })
-
-    client.k.subscribe(undefined, {
+    client.listen.subscribe(undefined, {
         onData(a) {
             console.log('Got', a)
         }
