@@ -1,7 +1,7 @@
 {
-  "name": "@kingworldjs/trpc",
-  "version": "0.0.0-experimental.1",
-  "description": "A plugin for kingworld that add support for using tRPC",
+  "name": "@elysiajs/trpc",
+  "version": "0.1.0-rc.1",
+  "description": "A plugin for Elysia that add support for using tRPC",
   "author": {
     "name": "saltyAom",
     "url": "https://github.com/SaltyAom",
@@ -9,45 +9,44 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/saltyaom/kingworld-trpc"
+    "url": "https://github.com/elysiajs/elysia-trpc"
   },
-  "main": "build/index.js",
-  "module": "build/es/index.js",
-  "esnext": "build/es/index.js",
+  "exports": {
+    "require": "./dist/cjs/index.js",
+    "import": "./dist/index.js",
+    "node": "./dist/index.js",
+    "default": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "bugs": "https://github.com/elysiajs/elysia-trpc/issues",
+  "homepage": "https://github.com/elysiajs/elysia-trpc",
+  "keywords": [
+    "elysia",
+    "trpc"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "dev": "bun run --hot example/index.ts",
+    "test": "bun wiptest",
+    "build": "rimraf dist && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build:esm": "tsc --project tsconfig.esm.json",
+    "release": "npm run build && npm run test && npm publish --access public"
+  },
   "devDependencies": {
-    "@kingworldjs/websocket": "^0.0.0-experimental.7",
-    "@swc/cli": "^0.1.57",
-    "@swc/core": "^1.3.11",
+    "@elysiajs/websocket": "^0.1.0-rc.3",
     "@trpc/client": "^10.1.0",
     "@trpc/server": "^10.1.0",
     "@types/node": "^18.11.7",
     "@types/ws": "^8.5.3",
     "bun-types": "^0.2.2",
     "eslint": "^8.26.0",
-    "kingworld": "^0.0.0-experimental.52",
-    "nodemon": "^2.0.20",
+    "elysia": "^0.1.0-rc.1",
     "typescript": "^4.8.4"
   },
   "peerDependencies": {
+    "@elysiajs/websocket": ">= 0.1.0-rc1.",
     "@trpc/server": ">= 10.0.0",
-    "@kingworldjs/websocket": ">= 0.0.0-experimental.7",
-    "kingworld": ">= 0.0.0-experimental.52"
-  },
-  "bugs": "https://github.com/SaltyAom/kingworld-trpc/issues",
-  "homepage": "https://github.com/saltyaom/kingworld-trpc",
-  "keywords": [
-    "kingworld",
-    "trpc"
-  ],
-  "license": "MIT",
-  "scripts": {
-    "dev": "nodemon --config nodemon.json",
-    "test": "bun wiptest",
-    "build": "npm run build:main && npm run build:es",
-    "build:main": "swc src --config-file .cjs.swcrc -d build",
-    "build:es": "swc src --config-file .es.swcrc -d build/es",
-    "release": "npm run build && npm run test && npm publish --access public"
-  },
-  "types": "src/index.ts",
-  "typings": "src/index.ts"
+    "elysia": ">= 0.1.0-rc.1"
+  }
 }

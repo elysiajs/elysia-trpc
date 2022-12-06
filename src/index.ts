@@ -1,17 +1,14 @@
-import { KingWorld, getPath } from 'kingworld'
-import { getSchemaValidator } from 'kingworld/src/utils'
+import { Elysia, getPath, getSchemaValidator } from 'elysia'
+import '@elysiajs/websocket'
 
 import { callProcedure, TRPCError, type Router } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { isObservable, Unsubscribable } from '@trpc/server/observable'
 
-import {
-    transformTRPCResponse,
-    getTRPCErrorFromUnknown
-} from './utils'
+import { transformTRPCResponse, getTRPCErrorFromUnknown } from './utils'
 
 import type { TSchema } from '@sinclair/typebox'
-import type { TRPCClientIncomingRequest } from './types'
+import type { TRPCClientIncomingRequest, TRPCOptions } from './types'
 
 export function compile<T extends TSchema>(schema: T) {
     const check = getSchemaValidator(schema)
@@ -24,7 +21,7 @@ export function compile<T extends TSchema>(schema: T) {
     }
 }
 
-KingWorld.prototype.trpc = function (
+Elysia.prototype.trpc = function (
     router,
     { endpoint = '/trpc', ...options } = {
         endpoint: '/trpc'
@@ -168,3 +165,9 @@ KingWorld.prototype.trpc = function (
 }
 
 export type { TRPCClientIncomingRequest, TRPCOptions } from './types'
+
+declare module 'elysia' {
+    interface Elysia {
+        trpc: (router: Router<any>, options?: TRPCOptions) => this
+    }
+}

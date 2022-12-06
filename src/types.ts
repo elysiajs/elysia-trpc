@@ -23,9 +23,3 @@ export interface TRPCOptions
      */
     endpoint?: string
 }
-
-declare module 'kingworld' {
-    interface KingWorld {
-        trpc: (router: Router<any>, options?: TRPCOptions) => this
-    }
-}

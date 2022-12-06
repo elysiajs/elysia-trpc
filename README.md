@@ -1,15 +1,15 @@
 # @kingworldjs/trpc
-A plugin for [kingworld](https://github.com/saltyaom/kingworld) that add support for using tRPC.
+A plugin for [elysia](https://github.com/elysiajs/elysia) that adds support for using tRPC.
 
 ## Installation
 ```bash
-bun add @kingworldjs/trpc
+bun add @elysiajs/trpc
 ```
 
 ## Example
 ```typescript
-import { KingWorld, t } from 'kingworld'
-import { compile as c } from '@kingworldjs/trpc'
+import { Elysia, t } from 'elysia'
+import { compile as c } from '@elysiajs/trpc'
 
 import { initTRPC } from '@trpc/server'
 
@@ -21,13 +21,13 @@ const router = r.router({
 
 export type Router = typeof router
 
-const app = new KingWorld()
+const app = new Elysia()
     .trpc(router)
     .listen(8080)
 ```
 
 ## API
-This plugin extends the new method `trpc` to `KingWorld` class.
+This plugin extends the new method `trpc` to `Elysia` class.
 
 ### trpc
 Register tRPC router.

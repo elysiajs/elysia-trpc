@@ -1,5 +1,5 @@
-import { KingWorld, t } from 'kingworld'
-import { websocket } from '@kingworldjs/websocket'
+import { Elysia, t } from 'elysia'
+import { websocket } from '@elysiajs/websocket'
 import { compile as c } from '../src'
 
 import { initTRPC } from '@trpc/server'
@@ -26,7 +26,7 @@ const router = p.router({
 
 export type Router = typeof router
 
-new KingWorld()
+new Elysia()
     .use(websocket())
     .get('/', () => 'tRPC')
     .trpc(router)
