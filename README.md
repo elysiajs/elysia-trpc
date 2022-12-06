@@ -1,4 +1,4 @@
-# @kingworldjs/trpc
+# @elysiajs/trpc
 A plugin for [elysia](https://github.com/elysiajs/elysia) that adds support for using tRPC.
 
 ## Installation

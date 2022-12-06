@@ -1,4 +1,4 @@
-import { KingWorld, t } from 'kingworld'
+import { Elysia, t } from 'elysia'
 
 import { compile as c } from '../src'
 
@@ -24,7 +24,7 @@ const router = r.router({
         .mutation(({ input }) => input)
 })
 
-const app = new KingWorld().trpc(router)
+const app = new Elysia().trpc(router)
 
 describe('TRPC', () => {
     it('handle query', async () => {
@@ -75,7 +75,7 @@ describe('TRPC', () => {
     })
 
     it('handle custom endpoint', async () => {
-        const app2 = new KingWorld().trpc(router, {
+        const app2 = new Elysia().trpc(router, {
             endpoint: '/v2/trpc'
         })
 
@@ -91,7 +91,7 @@ describe('TRPC', () => {
     })
 
     it('handle custom endpoint', async () => {
-        const app2 = new KingWorld().trpc(router, {
+        const app2 = new Elysia().trpc(router, {
             endpoint: '/v2/trpc'
         })
 
