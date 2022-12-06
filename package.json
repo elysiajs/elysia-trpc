@@ -1,6 +1,6 @@
 {
   "name": "@elysiajs/trpc",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0-rc.2",
   "description": "A plugin for Elysia that add support for using tRPC",
   "author": {
     "name": "saltyAom",
@@ -17,7 +17,7 @@
     "node": "./dist/index.js",
     "default": "./dist/index.js"
   },
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "bugs": "https://github.com/elysiajs/elysia-trpc/issues",
   "homepage": "https://github.com/elysiajs/elysia-trpc",
   "keywords": [
@@ -34,7 +34,7 @@
     "release": "npm run build && npm run test && npm publish --access public"
   },
   "devDependencies": {
-    "@elysiajs/websocket": "^0.1.0-rc.3",
+    "@elysiajs/websocket": "^0.1.0-rc.4",
     "@trpc/client": "^10.1.0",
     "@trpc/server": "^10.1.0",
     "@types/node": "^18.11.7",

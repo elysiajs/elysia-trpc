@@ -165,9 +165,3 @@ Elysia.prototype.trpc = function (
 }
 
 export type { TRPCClientIncomingRequest, TRPCOptions } from './types'
-
-declare module 'elysia' {
-    interface Elysia {
-        trpc: (router: Router<any>, options?: TRPCOptions) => this
-    }
-}

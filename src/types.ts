@@ -23,3 +23,9 @@ export interface TRPCOptions
      */
     endpoint?: string
 }
+
+declare module 'elysia' {
+    interface Elysia {
+        trpc: (router: Router<any>, options?: TRPCOptions) => this
+    }
+}
