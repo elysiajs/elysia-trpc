@@ -1,6 +1,6 @@
 {
   "name": "@elysiajs/trpc",
-  "version": "0.1.0-rc.2",
+  "version": "0.1.0-rc.3",
   "description": "A plugin for Elysia that add support for using tRPC",
   "author": {
     "name": "saltyAom",
@@ -11,6 +11,7 @@
     "type": "git",
     "url": "https://github.com/elysiajs/elysia-trpc"
   },
+  "main": "./dist/index.js",
   "exports": {
     "require": "./dist/cjs/index.js",
     "import": "./dist/index.js",
