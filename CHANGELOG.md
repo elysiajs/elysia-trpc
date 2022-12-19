@@ -1,3 +1,7 @@
+# 0.1.0-rc.5 - 19 Dec 2022
+Fix:
+- missing type
+
 # 0.1.0-rc.4 - 13 Dec 2022
 Improvement:
 - Add support for Elysia 0.1.0-rc.5

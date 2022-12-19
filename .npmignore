@@ -13,7 +13,6 @@ nodemon.json
 
 example
 tests
-src
 test
 CHANGELOG.md
 .eslintrc.js
