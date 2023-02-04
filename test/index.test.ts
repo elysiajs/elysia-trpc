@@ -29,6 +29,15 @@ const router = r.router({
         .mutation(({ input }) => input)
 })
 
+const anotherRouter = r.router({
+    another: r.procedure.query(() => ({ ping: 'pong' }))
+})
+
+const mergedRouter = r.router({
+    main: router,
+    another: anotherRouter
+})
+
 const app = new Elysia().trpc(router)
 
 describe('TRPC', () => {
@@ -117,13 +126,23 @@ describe('TRPC', () => {
         })
 
         const res = (await app2
+            .handle(new Request('http://0.0.0.0:8080/trpc/context'))
+            .then((r) => r.json())) as any
+
+        expect(res.result.data).toEqual(createContext())
+    })
+
+    it('support merged router', async () => {
+        const app2 = new Elysia().trpc(mergedRouter)
+
+        const res = (await app2
             .handle(
                 new Request(
-                    'http://0.0.0.0:8080/trpc/context'
+                    'http://0.0.0.0:8080/trpc/main.greet?batch=1&input=%7B%220%22%3A%22a%22%7D'
                 )
             )
             .then((r) => r.json())) as any
 
-        expect(res.result.data).toEqual(createContext())
+        expect(res[0].result.data).toBe('a')
     })
 })

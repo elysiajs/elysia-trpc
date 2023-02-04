@@ -18,13 +18,11 @@ const p = initTRPC.context<Awaited<ReturnType<typeof createContext>>>().create()
 const ee = new EventEmitter()
 
 const router = p.router({
-    mirror: p.procedure
-        .input(c(t.String()))
-        .query(({ input }) => {
-            ee.emit('listen', input)
+    mirror: p.procedure.input(c(t.String())).query(({ input }) => {
+        ee.emit('listen', input)
 
-            return input
-        }),
+        return input
+    }),
     listen: p.procedure.subscription(() =>
         observable<string>((emit) => {
             ee.on('listen', (input) => {
