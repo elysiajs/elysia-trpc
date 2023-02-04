@@ -1,4 +1,4 @@
-import { Elysia, getPath, getSchemaValidator } from 'elysia'
+import { Elysia, getSchemaValidator, mapPathnameAndQueryRegEx } from 'elysia'
 import '@elysiajs/websocket'
 
 import { callProcedure, TRPCError, type Router } from '@trpc/server'
@@ -11,7 +11,7 @@ import type { TSchema } from '@sinclair/typebox'
 import type { TRPCClientIncomingRequest, TRPCOptions } from './types'
 
 export function compile<T extends TSchema>(schema: T) {
-    const check = getSchemaValidator(schema)
+    const check = getSchemaValidator(schema, {})
     if (!check) throw new Error('Invalid schema')
 
     return (input: unknown) => {
@@ -27,8 +27,10 @@ Elysia.prototype.trpc = function (
         endpoint: '/trpc'
     }
 ) {
-    let app = this.onParse(async (request) => {
-        if (getPath(request.url).startsWith(endpoint)) return true
+    let app = this.onParse(async ({ request }) => {
+        const fragment = request.url.match(mapPathnameAndQueryRegEx)
+
+        if (fragment?.[1].startsWith(endpoint)) return true
     }).all(`${endpoint}/*`, async (ctx) =>
         fetchRequestHandler({
             ...options,

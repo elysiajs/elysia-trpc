@@ -1,3 +1,7 @@
+# 0.2.0 - 4 Feb 2023
+Change:
+- Bumb minimum version of Elysia to 0.2.0
+
 # 0.1.0-rc.5 - 19 Dec 2022
 Fix:
 - Missing type

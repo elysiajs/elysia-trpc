@@ -8,9 +8,14 @@ import { initTRPC } from '@trpc/server'
 
 const req = (path: string) => new Request(path)
 
-const r = initTRPC.create()
+const createContext = () => ({
+    name: 'elysia'
+})
+
+const r = initTRPC.context<ReturnType<typeof createContext>>().create()
 
 const router = r.router({
+    context: r.procedure.query(({ ctx }) => ctx),
     greet: r.procedure.input(c(t.String())).query(({ input }) => input),
     signIn: r.procedure
         .input(
@@ -104,5 +109,21 @@ describe('TRPC', () => {
             .then((r) => r.json())) as any[]
 
         expect(res[0].result.data).toBe('a')
+    })
+
+    it('receive context', async () => {
+        const app2 = new Elysia().trpc(router, {
+            createContext
+        })
+
+        const res = (await app2
+            .handle(
+                new Request(
+                    'http://0.0.0.0:8080/trpc/context'
+                )
+            )
+            .then((r) => r.json())) as any
+
+        expect(res.result.data).toEqual(createContext())
     })
 })
