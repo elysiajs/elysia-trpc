@@ -1,5 +1,4 @@
 import { Elysia, getSchemaValidator, mapPathnameAndQueryRegEx } from 'elysia'
-import '@elysiajs/websocket'
 
 import { callProcedure, TRPCError, type Router } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
@@ -51,7 +50,8 @@ export const trpc =
 
         const observers: Map<string, Unsubscribable> = new Map()
 
-        if (app.websocketRouter)
+        // @ts-ignore
+        if (app.wsRouter)
             app.ws<any>(endpoint, {
                 async message(ws, message) {
                     const messages: TRPCClientIncomingRequest[] = Array.isArray(
