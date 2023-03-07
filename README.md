@@ -9,7 +9,7 @@ bun add @elysiajs/trpc
 ## Example
 ```typescript
 import { Elysia, t } from 'elysia'
-import { compile as c } from '@elysiajs/trpc'
+import { trpc, compile as c } from '@elysiajs/trpc'
 
 import { initTRPC } from '@trpc/server'
 
@@ -22,7 +22,7 @@ const router = r.router({
 export type Router = typeof router
 
 const app = new Elysia()
-    .trpc(router)
+    .use(trpc(router))
     .listen(8080)
 ```
 
