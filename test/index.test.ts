@@ -1,12 +1,10 @@
 import { Elysia, t } from 'elysia'
-
-import { compile as c } from '../src'
+import { trpc, compile as c } from '../src'
 
 import { describe, expect, it } from 'bun:test'
-
 import { initTRPC } from '@trpc/server'
 
-const req = (path: string) => new Request(path)
+const req = (path: string) => new Request(`http://localhost${path}`)
 
 const createContext = () => ({
     name: 'elysia'
@@ -38,7 +36,7 @@ const mergedRouter = r.router({
     another: anotherRouter
 })
 
-const app = new Elysia().trpc(router)
+const app = new Elysia().use(trpc(router))
 
 describe('TRPC', () => {
     it('handle query', async () => {
@@ -89,9 +87,11 @@ describe('TRPC', () => {
     })
 
     it('handle custom endpoint', async () => {
-        const app2 = new Elysia().trpc(router, {
-            endpoint: '/v2/trpc'
-        })
+        const app2 = new Elysia().use(
+            trpc(router, {
+                endpoint: '/v2/trpc'
+            })
+        )
 
         const res = (await app2
             .handle(
@@ -105,9 +105,11 @@ describe('TRPC', () => {
     })
 
     it('handle custom endpoint', async () => {
-        const app2 = new Elysia().trpc(router, {
-            endpoint: '/v2/trpc'
-        })
+        const app2 = new Elysia().use(
+            trpc(router, {
+                endpoint: '/v2/trpc'
+            })
+        )
 
         const res = (await app2
             .handle(
@@ -121,9 +123,11 @@ describe('TRPC', () => {
     })
 
     it('receive context', async () => {
-        const app2 = new Elysia().trpc(router, {
-            createContext
-        })
+        const app2 = new Elysia().use(
+            trpc(router, {
+                createContext
+            })
+        )
 
         const res = (await app2
             .handle(new Request('http://0.0.0.0:8080/trpc/context'))
@@ -133,7 +137,7 @@ describe('TRPC', () => {
     })
 
     it('support merged router', async () => {
-        const app2 = new Elysia().trpc(mergedRouter)
+        const app2 = new Elysia().use(trpc(mergedRouter))
 
         const res = (await app2
             .handle(

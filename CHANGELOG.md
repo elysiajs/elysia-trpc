@@ -1,3 +1,10 @@
+# 0.3.0-rc.0 - 7 Mar 2023
+Improvement:
+- Add support for Elysia 0.3.0-rc.0
+
+Breaking Change:
+- Remove `.trpc`, migrate to `use(trpc(router, options))` instead
+
 # 0.2.0 - 4 Feb 2023
 Change:
 - Bumb minimum version of Elysia to 0.2.0
