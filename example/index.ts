@@ -1,6 +1,5 @@
-import { Elysia, t } from 'elysia'
-import { websocket } from '@elysiajs/websocket'
-import { compile as c } from '../src'
+import { Elysia, ws, t } from 'elysia'
+import { trpc, compile as c } from '../src'
 
 import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
@@ -35,11 +34,13 @@ const router = p.router({
 export type Router = typeof router
 
 new Elysia()
-    .use(websocket())
+    .use(ws())
     .get('/', () => 'tRPC')
-    .trpc(router, {
-        createContext
-    })
+    .use(
+        trpc(router, {
+            createContext
+        })
+    )
     .listen(8080, ({ hostname, port }) => {
         console.log(`🦊 running at http://${hostname}:${port}`)
     })
