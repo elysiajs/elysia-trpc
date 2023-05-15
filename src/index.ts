@@ -80,7 +80,7 @@ export const trpc =
                     for (const incoming of messages) {
                         if (incoming.method === 'subscription.stop') {
                             observer?.unsubscribe()
-                            observers.delete(ws.data.id)
+                            observers.delete(ws.data.id.toString())
 
                             return void ws.send(
                                 JSON.stringify({
@@ -180,12 +180,12 @@ export const trpc =
                             }
                         })
 
-                        observers.set(ws.data.id, observer)
+                        observers.set(ws.data.id.toString(), observer)
                     }
                 },
                 close(ws) {
-                    observers.get(ws.data.id)?.unsubscribe()
-                    observers.delete(ws.data.id)
+                    observers.get(ws.data.id.toString())?.unsubscribe()
+                    observers.delete(ws.data.id.toString())
                 }
             })
 

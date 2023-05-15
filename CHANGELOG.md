@@ -1,6 +1,11 @@
+# 0.5.0 - 15 May 2023
+- Add support for Elysia 0.5
+- Add CommonJS support
+
 # 0.3.0 - 17 Mar 2023
 Improvement:
 - Add support for Elysia 0.3.0
+
 # 0.3.0-rc.0 - 7 Mar 2023
 Improvement:
 - Add support for Elysia 0.3.0-rc.0
