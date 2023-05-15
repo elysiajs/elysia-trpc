@@ -1,4 +1,4 @@
-import { Elysia, getSchemaValidator, mapPathnameAndQueryRegEx } from 'elysia'
+import { Elysia, getSchemaValidator } from 'elysia'
 
 import { callProcedure, TRPCError, type Router } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
@@ -25,6 +25,15 @@ export function compile<T extends TSchema>(schema: T) {
     }
 }
 
+const getPath = (url: string) => {
+    const start = url.indexOf('/', 9)
+    const end = url.indexOf('?', start)
+
+    if (end === -1) return url.slice(start)
+
+    return url.slice(start, end)
+}
+
 export const trpc =
     (
         router: Router<any>,
@@ -32,21 +41,27 @@ export const trpc =
             endpoint: '/trpc'
         }
     ) =>
-    (eli: Elysia) => {
-        let app = eli
-            .onParse(async ({ request }) => {
-                const fragment = request.url.match(mapPathnameAndQueryRegEx)
-
-                if (fragment?.[1].startsWith(endpoint)) return true
+    (eri: Elysia) => {
+        let app = eri
+            .onParse(async ({ request: { url } }) => {
+                if (getPath(url).startsWith(endpoint)) return true
             })
-            .all(`${endpoint}/*`, async (ctx) =>
-                fetchRequestHandler({
+            .get(`${endpoint}/*`, async ({ query, request }) => {
+                return fetchRequestHandler({
                     ...options,
-                    req: ctx.request,
+                    req: request,
                     router,
                     endpoint
                 })
-            )
+            })
+            .post(`${endpoint}/*`, async ({ query, request }) => {
+                return fetchRequestHandler({
+                    ...options,
+                    req: request,
+                    router,
+                    endpoint
+                })
+            })
 
         const observers: Map<string, Unsubscribable> = new Map()
 
