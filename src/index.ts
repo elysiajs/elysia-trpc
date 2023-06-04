@@ -67,7 +67,7 @@ export const trpc =
 
         // @ts-ignore
         if (app.wsRouter)
-            app.ws<any>(endpoint, {
+            app.ws<any, any>(endpoint, {
                 async message(ws, message) {
                     const messages: TRPCClientIncomingRequest[] = Array.isArray(
                         message
