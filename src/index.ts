@@ -78,6 +78,10 @@ export const trpc =
                     let observer: Unsubscribable | undefined
 
                     for (const incoming of messages) {
+                        if(!incoming.method || !incoming.params) {
+                          continue
+                        }
+
                         if (incoming.method === 'subscription.stop') {
                             observer?.unsubscribe()
                             observers.delete(ws.data.id.toString())
