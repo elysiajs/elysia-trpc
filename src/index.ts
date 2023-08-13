@@ -14,7 +14,7 @@ export function compile<T extends TSchema>(schema: T) {
     if (!check) throw new Error('Invalid schema')
 
     return (value: unknown) => {
-        if (check.Check(value)) return value
+        if (check.Check(value)) return value as (typeof schema)["static"]
 
         const { path, message } = [...check.Errors(value)][0]
 
@@ -78,6 +78,10 @@ export const trpc =
                     let observer: Unsubscribable | undefined
 
                     for (const incoming of messages) {
+                        if(!incoming.method || !incoming.params) {
+                          continue
+                        }
+
                         if (incoming.method === 'subscription.stop') {
                             observer?.unsubscribe()
                             observers.delete(ws.data.id.toString())
@@ -96,7 +100,7 @@ export const trpc =
                         const result = await callProcedure({
                             procedures: router._def.procedures,
                             path: incoming.params.path,
-                            rawInput: incoming.params.input,
+                            rawInput: incoming.params.input?.json,
                             type: incoming.method,
                             ctx: {}
                         })
