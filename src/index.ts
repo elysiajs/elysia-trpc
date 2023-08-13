@@ -100,7 +100,7 @@ export const trpc =
                         const result = await callProcedure({
                             procedures: router._def.procedures,
                             path: incoming.params.path,
-                            rawInput: incoming.params.input,
+                            rawInput: incoming.params.input?.json,
                             type: incoming.method,
                             ctx: {}
                         })

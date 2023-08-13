@@ -7,7 +7,9 @@ export interface TRPCClientIncomingRequest {
     method: 'query' | 'mutation' | 'subscription' | 'subscription.stop'
     params: {
         path: string
-        input?: unknown
+        input?: {
+            json?: unknown
+        }
     }
 }
 
