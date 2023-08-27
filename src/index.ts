@@ -69,6 +69,8 @@ export const trpc =
         if (app.wsRouter)
             app.ws<any, any>(endpoint, {
                 async message(ws, message) {
+                    if (typeof message === 'string' && /(^\[|\{)([\s\S]*)(\]|\})$/.test(message))
+                        message = JSON.parse(message);
                     const messages: TRPCClientIncomingRequest[] = Array.isArray(
                         message
                     )
