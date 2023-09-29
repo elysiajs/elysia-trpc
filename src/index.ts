@@ -1,13 +1,22 @@
-import { Elysia, getSchemaValidator } from 'elysia'
+import {
+    DefinitionBase,
+    Elysia,
+    InputSchema,
+    MergeSchema,
+    RouteSchema,
+    UnwrapSchema,
+    getSchemaValidator
+} from 'elysia'
 
-import { callProcedure, TRPCError, type Router } from '@trpc/server'
+import { TRPCError, callProcedure, type Router } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
-import { isObservable, Unsubscribable } from '@trpc/server/observable'
+import { Unsubscribable, isObservable } from '@trpc/server/observable'
 
-import { transformTRPCResponse, getTRPCErrorFromUnknown } from './utils'
+import { getTRPCErrorFromUnknown, transformTRPCResponse } from './utils'
 
 import type { TSchema } from '@sinclair/typebox'
 import type { TRPCClientIncomingRequest, TRPCOptions } from './types'
+import { getErrorShape } from '@trpc/server/shared'
 
 export function compile<T extends TSchema>(schema: T) {
     const check = getSchemaValidator(schema, {})
@@ -34,6 +43,8 @@ const getPath = (url: string) => {
     return url.slice(start, end)
 }
 
+type ClientSubscripted = Map<string, Unsubscribable>
+
 export const trpc =
     (
         router: Router<any>,
@@ -41,8 +52,8 @@ export const trpc =
             endpoint: '/trpc'
         }
     ) =>
-    (eri: Elysia) => {
-        let app = eri
+    (eri: Elysia): Elysia => {
+        const app = eri
             .onParse(async ({ request: { url } }) => {
                 if (getPath(url).startsWith(endpoint)) return true
             })
@@ -63,28 +74,47 @@ export const trpc =
                 })
             })
 
-        const observers: Map<string, Unsubscribable> = new Map()
+        const observers: Map<string, ClientSubscripted> = new Map()
 
-        // @ts-ignore
-        if (app.wsRouter)
-            app.ws<any, any>(endpoint, {
+        if (options.useSubscription)
+            app.ws(endpoint, {
+                open(ws) {
+                    const id =
+                        ws.data.headers['sec-websocket-key'] ??
+                        crypto.randomUUID()
+
+                    // @ts-ignore
+                    ws.data.id = id
+                },
                 async message(ws, message) {
-                    const messages: TRPCClientIncomingRequest[] = Array.isArray(
-                        message
-                    )
-                        ? message
-                        : [message]
+                    // @ts-ignore
+                    const id = ws.data.id
 
-                    let observer: Unsubscribable | undefined
+                    if (!observers.get(id)) {
+                        observers.set(id, new Map())
+                    }
+
+                    const msg =
+                        typeof message === 'string'
+                            ? JSON.parse(message)
+                            : message
+
+                    const messages: TRPCClientIncomingRequest[] = Array.isArray(
+                        msg
+                    )
+                        ? msg
+                        : [msg]
+
+                    await Promise.allSettled(messages.map((incoming) => {}))
 
                     for (const incoming of messages) {
-                        if(!incoming.method || !incoming.params) {
-                          continue
-                        }
-
                         if (incoming.method === 'subscription.stop') {
+                            const clientObservers = observers.get(id)
+                            const observer = clientObservers?.get(
+                                incoming.id.toString()
+                            )
                             observer?.unsubscribe()
-                            observers.delete(ws.data.id.toString())
+                            clientObservers?.delete(incoming.id.toString())
 
                             return void ws.send(
                                 JSON.stringify({
@@ -97,99 +127,122 @@ export const trpc =
                             )
                         }
 
-                        const result = await callProcedure({
-                            procedures: router._def.procedures,
-                            path: incoming.params.path,
-                            rawInput: incoming.params.input?.json,
-                            type: incoming.method,
-                            ctx: {}
-                        })
+                        if (!incoming.method || !incoming.params) {
+                            continue
+                        }
 
-                        if (incoming.method !== 'subscription')
-                            return void ws.send(
+                        const sendErrorMessage = (err: unknown) => {
+                            ws.send(
                                 JSON.stringify(
                                     transformTRPCResponse(router, {
                                         id: incoming.id,
                                         jsonrpc: incoming.jsonrpc,
-                                        result: {
-                                            type: 'data',
-                                            data: result
-                                        }
+                                        error: getErrorShape({
+                                            error: getTRPCErrorFromUnknown(err),
+                                            type: incoming.method as 'subscription',
+                                            path: incoming.params.path,
+                                            input: incoming.params.input,
+                                            ctx: {},
+                                            config: router._def._config
+                                        })
                                     })
                                 )
                             )
+                        }
 
-                        ws.send(
-                            JSON.stringify({
-                                id: incoming.id,
-                                jsonrpc: incoming.jsonrpc,
-                                result: {
-                                    type: 'started'
-                                }
-                            })
-                        )
-
-                        if (!isObservable(result))
-                            throw new TRPCError({
-                                message: `Subscription ${incoming.params.path} did not return an observable`,
-                                code: 'INTERNAL_SERVER_ERROR'
+                        try {
+                            const result = await callProcedure({
+                                procedures: router._def.procedures,
+                                path: incoming.params.path,
+                                rawInput: incoming.params.input?.json,
+                                type: incoming.method,
+                                ctx: {}
                             })
 
-                        observer = result.subscribe({
-                            next(data) {
-                                ws.send(
+                            if (incoming.method !== 'subscription') {
+                                return void ws.send(
                                     JSON.stringify(
                                         transformTRPCResponse(router, {
                                             id: incoming.id,
                                             jsonrpc: incoming.jsonrpc,
                                             result: {
                                                 type: 'data',
-                                                data
-                                            }
-                                        })
-                                    )
-                                )
-                            },
-                            error(err) {
-                                ws.send(
-                                    JSON.stringify(
-                                        transformTRPCResponse(router, {
-                                            id: incoming.id,
-                                            jsonrpc: incoming.jsonrpc,
-                                            error: router.getErrorShape({
-                                                error: getTRPCErrorFromUnknown(
-                                                    err
-                                                ),
-                                                type: incoming.method as 'subscription',
-                                                path: incoming.params.path,
-                                                input: incoming.params.input,
-                                                ctx: {}
-                                            })
-                                        })
-                                    )
-                                )
-                            },
-                            complete() {
-                                ws.send(
-                                    JSON.stringify(
-                                        transformTRPCResponse(router, {
-                                            id: incoming.id,
-                                            jsonrpc: incoming.jsonrpc,
-                                            result: {
-                                                type: 'stopped'
+                                                data: result
                                             }
                                         })
                                     )
                                 )
                             }
-                        })
 
-                        observers.set(ws.data.id.toString(), observer)
+                            ws.send(
+                                JSON.stringify({
+                                    id: incoming.id,
+                                    jsonrpc: incoming.jsonrpc,
+                                    result: {
+                                        type: 'started'
+                                    }
+                                })
+                            )
+
+                            if (!isObservable(result)) {
+                                throw new TRPCError({
+                                    message: `Subscription ${incoming.params.path} did not return an observable`,
+                                    code: 'INTERNAL_SERVER_ERROR'
+                                })
+                            }
+
+                            const observer = result.subscribe({
+                                next(data) {
+                                    ws.send(
+                                        JSON.stringify(
+                                            transformTRPCResponse(router, {
+                                                id: incoming.id,
+                                                jsonrpc: incoming.jsonrpc,
+                                                result: {
+                                                    type: 'data',
+                                                    data
+                                                }
+                                            })
+                                        )
+                                    )
+                                },
+                                error(err) {
+                                    sendErrorMessage(err)
+                                },
+                                complete() {
+                                    ws.send(
+                                        JSON.stringify(
+                                            transformTRPCResponse(router, {
+                                                id: incoming.id,
+                                                jsonrpc: incoming.jsonrpc,
+                                                result: {
+                                                    type: 'stopped'
+                                                }
+                                            })
+                                        )
+                                    )
+                                }
+                            })
+
+                            observers
+                                .get(id)
+                                ?.set(incoming.id.toString(), observer)
+                        } catch (err) {
+                            sendErrorMessage(err)
+                        }
                     }
                 },
                 close(ws) {
-                    observers.get(ws.data.id.toString())?.unsubscribe()
-                    observers.delete(ws.data.id.toString())
+                    // @ts-ignore
+                    const id = ws.data.id
+
+                    const clientObservers = observers.get(id)
+
+                    clientObservers?.forEach((val, key) => {
+                        val.unsubscribe()
+                    })
+
+                    observers.delete(id)
                 }
             })
 
