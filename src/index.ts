@@ -16,12 +16,15 @@ export function compile<T extends TSchema>(schema: T) {
     return (value: unknown) => {
         if (check.Check(value)) return value
 
-        const { path, message } = [...check.Errors(value)][0]
-
-        throw new TRPCError({
-            message: `${message} for ${path}`,
-            code: 'BAD_REQUEST'
-        })
+        const error = [...check.Errors(value)][0];
+        if (error) {
+            const { path, message } = error
+    
+            throw new TRPCError({
+                message: `${message} for ${path}`,
+                code: 'BAD_REQUEST'
+            })
+        }
     }
 }
 
