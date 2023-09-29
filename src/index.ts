@@ -137,12 +137,13 @@ export const trpc =
                                     transformTRPCResponse(router, {
                                         id: incoming.id,
                                         jsonrpc: incoming.jsonrpc,
-                                        error: router.getErrorShape({
+                                        error: getErrorShape({
                                             error: getTRPCErrorFromUnknown(err),
                                             type: incoming.method as 'subscription',
                                             path: incoming.params.path,
                                             input: incoming.params.input,
-                                            ctx: {}
+                                            ctx: {},
+                                            config: router._def._config
                                         })
                                     })
                                 )
