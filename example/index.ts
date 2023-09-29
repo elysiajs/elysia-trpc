@@ -1,4 +1,4 @@
-import { Elysia, ws, t } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { trpc, compile as c } from '../src'
 
 import { initTRPC } from '@trpc/server'
@@ -34,11 +34,11 @@ const router = p.router({
 export type Router = typeof router
 
 new Elysia()
-    .use(ws())
     .get('/', () => 'tRPC')
     .use(
         trpc(router, {
-            createContext
+            createContext,
+            useSubscription: true
         })
     )
     .listen(8080, ({ hostname, port }) => {
