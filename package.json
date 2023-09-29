@@ -47,6 +47,6 @@
   },
   "peerDependencies": {
     "@trpc/server": ">= 10.0.0",
-    "elysia": ">= 0.5.12"
+    "elysia": ">= 0.7.15"
   }
 }
