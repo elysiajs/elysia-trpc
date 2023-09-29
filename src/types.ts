@@ -1,4 +1,3 @@
-import type { Router } from '@trpc/server'
 import type { FetchHandlerRequestOptions } from '@trpc/server/adapters/fetch'
 
 export interface TRPCClientIncomingRequest {
@@ -24,4 +23,5 @@ export interface TRPCOptions
      * @default '/trpc'
      */
     endpoint?: string
+    useSubscription?: boolean;
 }
