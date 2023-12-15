@@ -67,8 +67,8 @@ export const trpc =
 
         // @ts-ignore
         if (app.wsRouter)
-            app.ws<any, any>(endpoint, {
-                async message(ws, message) {
+            app.ws<any, any, any>(endpoint, {
+                async message(ws: any, message: any) {
                     const messages: TRPCClientIncomingRequest[] = Array.isArray(
                         message
                     )
@@ -187,7 +187,7 @@ export const trpc =
                         observers.set(ws.data.id.toString(), observer)
                     }
                 },
-                close(ws) {
+                close(ws: any) {
                     observers.get(ws.data.id.toString())?.unsubscribe()
                     observers.delete(ws.data.id.toString())
                 }

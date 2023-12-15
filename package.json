@@ -1,52 +1,51 @@
 {
-  "name": "@elysiajs/trpc",
-  "version": "0.5.2",
-  "description": "A plugin for Elysia that add support for using tRPC",
-  "author": {
-    "name": "saltyAom",
-    "url": "https://github.com/SaltyAom",
-    "email": "saltyaom@gmail.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/elysiajs/elysia-trpc"
-  },
-  "main": "./dist/index.js",
-  "exports": {
-    "bun": "./dist/index.js",
-    "node": "./dist/cjs/index.js",
-    "require": "./dist/cjs/index.js",
-    "import": "./dist/index.js",
-    "default": "./dist/index.js"
-  },
-  "types": "./src/index.ts",
-  "bugs": "https://github.com/elysiajs/elysia-trpc/issues",
-  "homepage": "https://github.com/elysiajs/elysia-trpc",
-  "keywords": [
-    "elysia",
-    "trpc"
-  ],
-  "license": "MIT",
-  "scripts": {
-    "dev": "bun run --hot example/index.ts",
-    "test": "bun wiptest && npm run test:node",
-    "test:node": "npm install --prefix ./test/node/cjs/ && npm install --prefix ./test/node/esm/ && node ./test/node/cjs/index.js && node ./test/node/esm/index.js",
-    "build": "rimraf dist && tsc --project tsconfig.esm.json && tsc --project tsconfig.cjs.json",
-    "release": "npm run build && npm run test && npm publish --access public"
-  },
-  "devDependencies": {
-    "@trpc/client": "^10.26.0",
-    "@trpc/server": "^10.26.0",
-    "@types/node": "^20.1.4",
-    "@types/ws": "^8.5.4",
-    "bun-types": "^0.5.8",
-    "elysia": "0.5.12",
-    "eslint": "^8.40.0",
-    "rimraf": "4.4.1",
-    "typescript": "^5.0.4"
-  },
-  "peerDependencies": {
-    "@trpc/server": ">= 10.0.0",
-    "elysia": ">= 0.5.12"
-  }
+    "name": "@elysiajs/trpc",
+    "version": "0.8.0-rc.0",
+    "description": "A plugin for Elysia that add support for using tRPC",
+    "author": {
+        "name": "saltyAom",
+        "url": "https://github.com/SaltyAom",
+        "email": "saltyaom@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/elysiajs/elysia-trpc"
+    },
+    "main": "./dist/index.js",
+    "exports": {
+        "bun": "./dist/index.js",
+        "node": "./dist/cjs/index.js",
+        "require": "./dist/cjs/index.js",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+    },
+    "types": "./src/index.ts",
+    "bugs": "https://github.com/elysiajs/elysia-trpc/issues",
+    "homepage": "https://github.com/elysiajs/elysia-trpc",
+    "keywords": [
+        "elysia",
+        "trpc"
+    ],
+    "license": "MIT",
+    "scripts": {
+        "dev": "bun run --hot example/index.ts",
+        "test": "bun test && npm run test:node",
+        "test:node": "npm install --prefix ./test/node/cjs/ && npm install --prefix ./test/node/esm/ && node ./test/node/cjs/index.js && node ./test/node/esm/index.js",
+        "build": "rimraf dist && tsc --project tsconfig.esm.json && tsc --project tsconfig.cjs.json",
+        "release": "npm run build && npm run test && npm publish --access public"
+    },
+    "devDependencies": {
+        "@trpc/client": "^10.26.0",
+        "@trpc/server": "^10.26.0",
+        "@types/node": "^20.1.4",
+        "@types/ws": "^8.5.4",
+        "bun-types": "^0.5.8",
+        "elysia": "0.8.0-rc.0",
+        "eslint": "^8.40.0",
+        "rimraf": "4.4.1",
+        "typescript": "^5.0.4"
+    },
+    "peerDependencies": {
+        "elysia": ">= 0.8.0-rc.0"
+    }
 }
