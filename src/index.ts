@@ -1,4 +1,4 @@
-import { Elysia, getSchemaValidator } from 'elysia'
+import { Elysia, getSchemaValidator, type Static } from 'elysia'
 
 import { callProcedure, TRPCError, type Router } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
@@ -9,7 +9,7 @@ import { transformTRPCResponse, getTRPCErrorFromUnknown } from './utils'
 import type { TSchema } from '@sinclair/typebox'
 import type { TRPCClientIncomingRequest, TRPCOptions } from './types'
 
-export function compile<T extends TSchema>(schema: T) {
+export function compile<T extends TSchema>(schema: T): (value: unknown) => Static<T> {
     const check = getSchemaValidator(schema, {})
     if (!check) throw new Error('Invalid schema')
 
