@@ -84,7 +84,7 @@ export const trpc =
 
                         if (incoming.method === 'subscription.stop') {
                             observer?.unsubscribe()
-                            observers.delete(ws.data.id.toString())
+                            observers.delete(ws.id.toString())
 
                             return void ws.send(
                                 JSON.stringify({
@@ -184,12 +184,12 @@ export const trpc =
                             }
                         })
 
-                        observers.set(ws.data.id.toString(), observer)
+                        observers.set(ws.id.toString(), observer)
                     }
                 },
                 close(ws: any) {
-                    observers.get(ws.data.id.toString())?.unsubscribe()
-                    observers.delete(ws.data.id.toString())
+                    observers.get(ws.id.toString())?.unsubscribe()
+                    observers.delete(ws.id.toString())
                 }
             })
 
