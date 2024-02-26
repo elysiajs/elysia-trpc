@@ -1,12 +1,9 @@
 import {
-    AnyRouter,
-    callProcedure,
-    CombinedDataTransformer,
-    ProcedureType,
+    AnyTRPCRouter,
+    TRPCProcedureType,
     TRPCError
 } from '@trpc/server'
 import {
-    TRPCClientOutgoingMessage,
     TRPCResponse,
     TRPCResponseMessage
 } from '@trpc/server/rpc'
@@ -17,7 +14,7 @@ function assertIsObject(obj: unknown): asserts obj is Record<string, unknown> {
     }
 }
 
-function assertIsProcedureType(obj: unknown): asserts obj is ProcedureType {
+function assertIsProcedureType(obj: unknown): asserts obj is TRPCProcedureType {
     if (obj !== 'query' && obj !== 'subscription' && obj !== 'mutation') {
         throw new Error('Invalid procedure type')
     }
@@ -52,7 +49,7 @@ function assertIsJSONRPC2OrUndefined(
 
 export function transformTRPCResponseItem<
     TResponseItem extends TRPCResponse | TRPCResponseMessage
->(router: AnyRouter, item: TResponseItem): TResponseItem {
+>(router: AnyTRPCRouter, item: TResponseItem): TResponseItem {
     if ('error' in item) {
         return {
             ...item,
@@ -81,7 +78,7 @@ export function transformTRPCResponse<
         | TRPCResponse[]
         | TRPCResponseMessage
         | TRPCResponseMessage[]
->(router: AnyRouter, itemOrItems: TResponse) {
+>(router: AnyTRPCRouter, itemOrItems: TResponse) {
     return Array.isArray(itemOrItems)
         ? itemOrItems.map((item) => transformTRPCResponseItem(router, item))
         : transformTRPCResponseItem(router, itemOrItems)
