@@ -1,6 +1,6 @@
 {
     "name": "@elysiajs/trpc",
-    "version": "0.8.0",
+    "version": "next",
     "description": "A plugin for Elysia that add support for using tRPC",
     "author": {
         "name": "saltyAom",
@@ -35,12 +35,12 @@
         "release": "npm run build && npm run test && npm publish --access public"
     },
     "devDependencies": {
-        "@trpc/client": "^10.26.0",
-        "@trpc/server": "^10.26.0",
+        "@trpc/client": "next",
+        "@trpc/server": "next",
         "@types/node": "^20.1.4",
         "@types/ws": "^8.5.4",
         "bun-types": "^0.5.8",
-        "elysia": "0.8.0",
+        "elysia": "next",
         "eslint": "^8.40.0",
         "rimraf": "4.4.1",
         "typescript": "^5.0.4"

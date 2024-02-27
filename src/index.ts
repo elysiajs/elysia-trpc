@@ -1,6 +1,6 @@
 import { Elysia, getSchemaValidator } from 'elysia'
 
-import { callProcedure, TRPCError, type Router } from '@trpc/server'
+import { callTRPCProcedure, TRPCError, type AnyTRPCRouter, getErrorShape } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { isObservable, Unsubscribable } from '@trpc/server/observable'
 
@@ -36,7 +36,7 @@ const getPath = (url: string) => {
 
 export const trpc =
     (
-        router: Router<any>,
+        router: AnyTRPCRouter,
         { endpoint = '/trpc', ...options }: TRPCOptions = {
             endpoint: '/trpc'
         }
@@ -97,10 +97,10 @@ export const trpc =
                             )
                         }
 
-                        const result = await callProcedure({
+                        const result = await callTRPCProcedure({
                             procedures: router._def.procedures,
                             path: incoming.params.path,
-                            rawInput: incoming.params.input?.json,
+                            getRawInput: async () => incoming.params.input?.json,
                             type: incoming.method,
                             ctx: {}
                         })
@@ -156,14 +156,15 @@ export const trpc =
                                         transformTRPCResponse(router, {
                                             id: incoming.id,
                                             jsonrpc: incoming.jsonrpc,
-                                            error: router.getErrorShape({
+                                            error: getErrorShape({
                                                 error: getTRPCErrorFromUnknown(
                                                     err
                                                 ),
                                                 type: incoming.method as 'subscription',
                                                 path: incoming.params.path,
                                                 input: incoming.params.input,
-                                                ctx: {}
+                                                ctx: {},
+                                                config: router._def._config
                                             })
                                         })
                                     )

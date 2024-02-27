@@ -1,4 +1,3 @@
-import type { Router } from '@trpc/server'
 import type { FetchHandlerRequestOptions } from '@trpc/server/adapters/fetch'
 
 export interface TRPCClientIncomingRequest {
