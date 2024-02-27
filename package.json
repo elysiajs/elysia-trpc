@@ -1,6 +1,6 @@
 {
     "name": "@elysiajs/trpc",
-    "version": "0.8.0",
+    "version": "next",
     "description": "A plugin for Elysia that add support for using tRPC",
     "author": {
         "name": "saltyAom",
