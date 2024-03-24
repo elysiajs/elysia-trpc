@@ -1,6 +1,6 @@
 {
-    "type": "commonjs",
-    "dependencies": {
-        "@elysiajs/trpc": "../../.."
-    }
+	"type": "commonjs",
+	"dependencies": {
+		"@elysiajs/trpc": "../../.."
+	}
 }
