@@ -18,6 +18,7 @@ import {
 	TRPCClientOutgoingMessage,
 	TRPCResponseMessage
 } from '@trpc/server/unstable-core-do-not-import'
+import { ServerWebSocket } from 'bun'
 import type { TRPCOptions } from './types'
 import { getTRPCErrorFromUnknown } from './utils'
 
@@ -47,7 +48,14 @@ const getPath = (url: string) => {
 }
 
 export const trpc =
-	<TRouter extends AnyTRPCRouter>(
+	<
+		TRouter extends AnyTRPCRouter,
+		tRPCSocket extends ServerWebSocket<{
+			ctx: inferRouterContext<TRouter> | undefined
+			request: Request
+			subscriptions: Map<number | string, Unsubscribable>
+		}>
+	>(
 		router: AnyTRPCRouter,
 		{ endpoint = '/trpc', ...options }: TRPCOptions = {
 			endpoint: '/trpc'
@@ -75,16 +83,30 @@ export const trpc =
 				})
 			})
 
-		const clientSubscriptions: Map<number | string, Unsubscribable> =
-			new Map()
-
 		if (app.ws) {
-			app.ws<any, any, any>(endpoint, {
-				async message(ws: any, message: any) {
-					const { createContext } = options
-					const { transformer } = router._def._config
+			function respond(
+				ws: tRPCSocket,
+				untransformedJSON: TRPCResponseMessage
+			) {
+				ws.send(
+					JSON.stringify(
+						transformTRPCResponse(
+							router._def._config,
+							untransformedJSON
+						)
+					)
+				)
+			}
 
-					const req = ws.data.request
+			app.ws<any, any, any>(endpoint, {
+				async open(ws: any) {
+					ws.data.subscriptions = new Map<
+						number | string,
+						Unsubscribable
+					>()
+
+					const { createContext } = options
+					const { request: req } = ws.data
 
 					let ctx: inferRouterContext<TRouter> | undefined = undefined
 					const ctxPromise = createContext?.({
@@ -93,7 +115,7 @@ export const trpc =
 
 					async function createContextAsync() {
 						try {
-							ctx = await ctxPromise
+							ws.data.ctx = await ctxPromise
 						} catch (cause) {
 							const error = getTRPCErrorFromUnknown(cause)
 							options.onError?.({
@@ -104,7 +126,7 @@ export const trpc =
 								req,
 								input: undefined
 							})
-							respond({
+							respond(ws, {
 								id: null,
 								error: getErrorShape({
 									config: router._def._config,
@@ -123,17 +145,10 @@ export const trpc =
 						}
 					}
 					await createContextAsync()
-
-					function respond(untransformedJSON: TRPCResponseMessage) {
-						ws.send(
-							JSON.stringify(
-								transformTRPCResponse(
-									router._def._config,
-									untransformedJSON
-								)
-							)
-						)
-					}
+				},
+				async message(ws: tRPCSocket, message: any) {
+					const { transformer } = router._def._config
+					const { request: req, ctx, subscriptions } = ws.data
 
 					function stopSubscription(
 						subscription: Unsubscribable,
@@ -144,7 +159,7 @@ export const trpc =
 					) {
 						subscription.unsubscribe()
 
-						respond({
+						respond(ws, {
 							id,
 							jsonrpc,
 							result: {
@@ -157,21 +172,23 @@ export const trpc =
 						msg: TRPCClientOutgoingMessage
 					) {
 						const { id, jsonrpc } = msg
-						/* istanbul ignore next -- @preserve */
 						if (id === null) {
 							throw new TRPCError({
 								code: 'BAD_REQUEST',
 								message: '`id` is required'
 							})
 						}
+
 						if (msg.method === 'subscription.stop') {
-							const sub = clientSubscriptions.get(id)
+							const sub = subscriptions.get(id)
+
 							if (sub) {
 								stopSubscription(sub, { id, jsonrpc })
 							}
-							clientSubscriptions.delete(id)
+							subscriptions.delete(id)
 							return
 						}
+
 						const { path, input } = msg.params
 						const type = msg.method
 						try {
@@ -191,7 +208,7 @@ export const trpc =
 									})
 								}
 							} else {
-								return void respond({
+								return void respond(ws, {
 									id,
 									jsonrpc,
 									result: {
@@ -204,7 +221,7 @@ export const trpc =
 							const observable = result
 							const sub = observable.subscribe({
 								next(data) {
-									respond({
+									respond(ws, {
 										id,
 										jsonrpc,
 										result: {
@@ -223,7 +240,7 @@ export const trpc =
 										req,
 										input
 									})
-									respond({
+									respond(ws, {
 										id,
 										jsonrpc,
 										error: getErrorShape({
@@ -237,7 +254,7 @@ export const trpc =
 									})
 								},
 								complete() {
-									respond({
+									respond(ws, {
 										id,
 										jsonrpc,
 										result: {
@@ -246,23 +263,24 @@ export const trpc =
 									})
 								}
 							})
-							if (ws.raw.readyState !== WebSocket.OPEN) {
+
+							if ((ws as any).raw.readyState !== WebSocket.OPEN) {
 								// if the client got disconnected whilst initializing the subscription
 								// no need to send stopped message if the client is disconnected
 								sub.unsubscribe()
 								return
 							}
 
-							if (clientSubscriptions.has(id)) {
+							if (subscriptions.has(id)) {
 								stopSubscription(sub, { id, jsonrpc })
 								throw new TRPCError({
 									message: `Duplicate id ${id}`,
 									code: 'BAD_REQUEST'
 								})
 							}
-							clientSubscriptions.set(id, sub)
+							subscriptions.set(id, sub)
 
-							respond({
+							respond(ws, {
 								id,
 								jsonrpc,
 								result: {
@@ -279,7 +297,7 @@ export const trpc =
 								req,
 								input
 							})
-							respond({
+							respond(ws, {
 								id,
 								jsonrpc,
 								error: getErrorShape({
@@ -312,7 +330,7 @@ export const trpc =
 							cause
 						})
 
-						return void respond({
+						return void respond(ws, {
 							id: null,
 							error: getErrorShape({
 								config: router._def._config,
@@ -325,11 +343,11 @@ export const trpc =
 						})
 					}
 				},
-				close() {
-					for (const sub of clientSubscriptions.values()) {
+				close(ws: tRPCSocket) {
+					for (const sub of ws.data.subscriptions.values()) {
 						sub.unsubscribe()
 					}
-					clientSubscriptions.clear()
+					ws.data.subscriptions.clear()
 				}
 			})
 		}

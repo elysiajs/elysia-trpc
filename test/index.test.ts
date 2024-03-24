@@ -1,16 +1,12 @@
 import { Elysia, t } from 'elysia'
 import { compile as c, trpc } from '../src'
 
-import { initTRPC } from '@trpc/server'
+import { initTRPC, TRPCError } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
-import { describe, expect, it } from 'bun:test'
-import { EventEmitter } from 'stream'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { EventEmitter } from 'events'
 
-const TESTING_PORT = 8088
-
-const createContext = () => ({
-	name: 'elysia'
-})
+const TESTING_PORT = 8080
 
 const createRequest = (path: string, init: RequestInit = {}) =>
 	new Request(`http://0.0.0.0:${TESTING_PORT}${path}`, init)
@@ -26,6 +22,10 @@ const waitForNextMessage = async (ws: WebSocket): Promise<unknown> => {
 	})
 }
 
+const createContext = () => ({
+	name: 'elysia'
+})
+
 const r = initTRPC.context<ReturnType<typeof createContext>>().create()
 
 const router = r.router({
@@ -40,37 +40,14 @@ const router = r.router({
 				})
 			)
 		)
-		.mutation(({ input }) => input)
+		.mutation(({ input }) => input),
+	505: r.procedure.query(() => {
+		throw new Error('Something wrong')
+	})
 })
 
 const anotherRouter = r.router({
 	another: r.procedure.query(() => ({ ping: 'pong' }))
-})
-
-const onlineEe = new EventEmitter()
-
-type OnlineMessage = { name: string; online: boolean }
-const onlineRouter = r.router({
-	online: r.procedure
-		.input(c(t.Object({ username: t.String() })))
-		.subscription(({ input, ctx }) => {
-			return observable<OnlineMessage>((emit) => {
-				const onUpdate = (isOnline: boolean) => {
-					emit.next({
-						name: ctx.name,
-						online: isOnline
-					})
-				}
-
-				onlineEe.on('update', onUpdate)
-				return () => {
-					onlineEe.off('update', onUpdate)
-				}
-			})
-		}),
-	update: r.procedure.input(c(t.Boolean())).mutation(({ input }) => {
-		onlineEe.emit('update', input)
-	})
 })
 
 const mergedRouter = r.router({
@@ -78,58 +55,205 @@ const mergedRouter = r.router({
 	another: anotherRouter
 })
 
-const app = new Elysia().use(trpc(router))
+describe('TRPC Mutations', () => {
+	const firstRecord = {
+		username: 'saltyaom-1',
+		password: '12345678-1'
+	}
+	const secondRecord = {
+		username: 'saltyaom-2',
+		password: '12345678-2'
+	}
 
-describe('TRPC', () => {
-	it('handle query', async () => {
-		const res = (await app
-			.handle(
-				createRequest(
-					'/trpc/greet?batch=1&input=%7B%220%22%3A%22a%22%7D'
-				)
-			)
-			.then((r) => r.json())) as any[]
+	let appMutation: Elysia
+	let appMutationMerged: Elysia
+	let appMutationCustomEndpoint: Elysia
 
-		expect(res[0].result.data).toBe('a')
+	beforeEach(() => {
+		appMutation = new Elysia().use(trpc(router))
+		appMutationMerged = new Elysia().use(trpc(mergedRouter))
+		appMutationCustomEndpoint = new Elysia().use(
+			trpc(router, { endpoint: '/v2/trpc' })
+		)
 	})
 
-	it('handle mutation', async () => {
-		const body = JSON.stringify({
-			'0': {
-				username: 'saltyaom',
-				password: '12345678'
-			}
-		})
-
-		const res = await app
+	it('handle single mutation', async () => {
+		const res = await appMutation
 			.handle(
 				createRequest('/trpc/signIn?batch=1', {
 					method: 'POST',
 					headers: {
-						'content-type': 'application/json',
-						'content-length': '123'
+						'content-type': 'application/json'
 					},
-					body
+					body: JSON.stringify({ '0': firstRecord })
 				})
 			)
-			.then((r) => r.text())
+			.then((r) => r.json())
 
-		expect(res).toBe(
-			JSON.stringify([
-				{
-					result: {
-						data: {
-							username: 'saltyaom',
-							password: '12345678'
-						}
-					}
-				}
-			])
-		)
+		expect(res).toStrictEqual([{ result: { data: firstRecord } }])
 	})
 
-	it('handle subscription', async () => {
-		const appWs = new Elysia()
+	it('handle multi mutation', async () => {
+		const res = await appMutation
+			.handle(
+				createRequest('/trpc/signIn,signIn?batch=1', {
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					},
+					body: JSON.stringify({
+						'0': firstRecord,
+						'1': secondRecord
+					})
+				})
+			)
+			.then((r) => r.json())
+
+		expect(res).toStrictEqual([
+			{ result: { data: firstRecord } },
+			{ result: { data: secondRecord } }
+		])
+	})
+
+	it('handle custom endpoint', async () => {
+		const res = (await appMutationCustomEndpoint
+			.handle(
+				createRequest('/v2/trpc/signIn?batch=1', {
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					},
+					body: JSON.stringify({ '0': firstRecord })
+				})
+			)
+			.then((r) => r.json())) as any[]
+
+		expect(res).toStrictEqual([{ result: { data: firstRecord } }])
+	})
+
+	it('support merged router', async () => {
+		const res = (await appMutationMerged
+			.handle(
+				createRequest('/trpc/main.signIn?batch=1', {
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					},
+					body: JSON.stringify({ '0': firstRecord })
+				})
+			)
+			.then((r) => r.json())) as any[]
+
+		expect(res).toStrictEqual([{ result: { data: firstRecord } }])
+	})
+})
+
+describe('TRPC Queries', () => {
+	const singleQueryParams = new URLSearchParams({
+		batch: '1',
+		input: JSON.stringify({ '0': 'a' })
+	}).toString()
+
+	const multiQueryParams = new URLSearchParams({
+		batch: '1',
+		input: JSON.stringify({ '0': 'a', '1': 'b' })
+	}).toString()
+
+	let appQuery: Elysia
+	let appQueryCustomEndpoint: Elysia
+	let appQueryMerged: Elysia
+
+	beforeEach(() => {
+		appQuery = new Elysia().use(trpc(router, { createContext }))
+		appQueryCustomEndpoint = new Elysia().use(
+			trpc(router, { createContext, endpoint: '/v2/trpc' })
+		)
+		appQueryMerged = new Elysia().use(trpc(mergedRouter, { createContext }))
+	})
+
+	it('handle single query', async () => {
+		const res = (await appQuery
+			.handle(createRequest(`/trpc/greet?${singleQueryParams}`))
+			.then((r) => r.json())) as any[]
+
+		expect(res).toStrictEqual([{ result: { data: 'a' } }])
+	})
+
+	it('handle multi query', async () => {
+		const res = (await appQuery
+			.handle(createRequest(`/trpc/greet,greet?${multiQueryParams}`))
+			.then((r) => r.json())) as any[]
+
+		expect(res).toStrictEqual([
+			{ result: { data: 'a' } },
+			{ result: { data: 'b' } }
+		])
+	})
+
+	it('handle custom endpoint', async () => {
+		const res = await appQueryCustomEndpoint
+			.handle(createRequest(`/v2/trpc/greet?${singleQueryParams}`))
+			.then((r) => r.json())
+
+		expect(res).toStrictEqual([{ result: { data: 'a' } }])
+	})
+
+	it('receive context', async () => {
+		const res = (await appQuery
+			.handle(createRequest('/trpc/context'))
+			.then((r) => r.json())) as any
+
+		expect(res).toStrictEqual({ result: { data: createContext() } })
+	})
+
+	it('receive context and greet', async () => {
+		const res = (await appQuery
+			.handle(createRequest('/trpc/context'))
+			.then((r) => r.json())) as any
+
+		expect(res).toStrictEqual({ result: { data: createContext() } })
+	})
+
+	it('support merged router', async () => {
+		const res = (await appQueryMerged
+			.handle(createRequest(`/trpc/main.greet?${singleQueryParams}`))
+			.then((r) => r.json())) as any
+
+		expect(res).toStrictEqual([{ result: { data: 'a' } }])
+	})
+})
+
+describe('TRPC Subscription', () => {
+	const ee = new EventEmitter()
+
+	const onlineRouter = r.router({
+		online: r.procedure
+			.input(c(t.Object({ username: t.String() })))
+			.subscription(({ input, ctx }) => {
+				return observable<{ name: string; online: boolean }>((emit) => {
+					const onUpdate = (isOnline: boolean) => {
+						emit.next({
+							name: ctx.name,
+							online: isOnline
+						})
+					}
+
+					ee.on('update', onUpdate)
+					return () => {
+						ee.off('update', onUpdate)
+					}
+				})
+			}),
+		update: r.procedure.input(c(t.Boolean())).mutation(({ input }) => {
+			ee.emit('update', input)
+		})
+	})
+
+	let appWs: Elysia
+	let ws: WebSocket
+
+	beforeEach(async () => {
+		appWs = new Elysia()
 			.use(
 				trpc(onlineRouter, {
 					createContext
@@ -137,9 +261,16 @@ describe('TRPC', () => {
 			)
 			.listen(TESTING_PORT)
 
-		const ws = new WebSocket(`ws://0.0.0.0:${TESTING_PORT}/trpc`)
+		ws = new WebSocket(`ws://0.0.0.0:${TESTING_PORT}/trpc`)
 		await new Promise((connected) => (ws.onopen = connected))
+	})
 
+	afterEach(() => {
+		ws.close()
+		appWs.stop()
+	})
+
+	it('handle single subscription', async () => {
 		sendMessage(ws, {
 			id: 1,
 			method: 'subscription',
@@ -160,19 +291,16 @@ describe('TRPC', () => {
 			}
 		})
 
-		const body = JSON.stringify({
-			'0': false
-		})
-
-		const resp = await appWs
+		await appWs
 			.handle(
 				createRequest('/trpc/update?batch=1', {
 					method: 'POST',
 					headers: {
-						'content-type': 'application/json',
-						'content-length': String(body.length)
+						'content-type': 'application/json'
 					},
-					body
+					body: JSON.stringify({
+						'0': false
+					})
 				})
 			)
 			.then(async (res) => {
@@ -210,23 +338,9 @@ describe('TRPC', () => {
 				type: 'stopped'
 			}
 		})
-
-		ws.close()
-		appWs.stop()
 	})
 
 	it('handle multi subscription', async () => {
-		const appWs = new Elysia()
-			.use(
-				trpc(onlineRouter, {
-					createContext
-				})
-			)
-			.listen(TESTING_PORT)
-
-		const ws = new WebSocket(`ws://0.0.0.0:${TESTING_PORT}/trpc`)
-		await new Promise((connected) => (ws.onopen = connected))
-
 		sendMessage(ws, [
 			{
 				id: 1,
@@ -271,72 +385,81 @@ describe('TRPC', () => {
 				}
 			}
 		])
+	})
+})
 
-		ws.close()
-		appWs.stop()
+describe('TRPC Errors', () => {
+	let appErros: Elysia
+
+	beforeEach(() => {
+		appErros = new Elysia().use(trpc(router))
 	})
 
-	it('handle custom endpoint', async () => {
-		const app2 = new Elysia().use(
-			trpc(router, {
-				endpoint: '/v2/trpc'
-			})
-		)
-
-		const res = (await app2
+	it('handle "not found"', async () => {
+		const res = (await appErros
 			.handle(
-				createRequest(
-					'/v2/trpc/greet?batch=1&input=%7B%220%22%3A%22a%22%7D'
-				)
+				createRequest('/trpc/i.dont.exists?batch=1', {
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					},
+					body: JSON.stringify({ '0': 'test' })
+				})
 			)
 			.then((r) => r.json())) as any[]
 
-		expect(res[0].result.data).toBe('a')
+		expect(res).toMatchObject([
+			{
+				error: {
+					code: -32004,
+					data: {
+						code: 'NOT_FOUND'
+					}
+				}
+			}
+		])
 	})
 
-	it('handle custom endpoint', async () => {
-		const app2 = new Elysia().use(
-			trpc(router, {
-				endpoint: '/v2/trpc'
-			})
-		)
-
-		const res = (await app2
+	it('handle "bad request"', async () => {
+		const res = await appErros
 			.handle(
-				createRequest(
-					'/v2/trpc/greet?batch=1&input=%7B%220%22%3A%22a%22%7D'
-				)
+				createRequest('/trpc/signIn?batch=1', {
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					},
+					body: JSON.stringify({ '0': 'test' })
+				})
 			)
-			.then((r) => r.json())) as any[]
+			.then((r) => r.json())
 
-		expect(res[0].result.data).toBe('a')
+		expect(res).toMatchObject([
+			{
+				error: {
+					code: -32600,
+					data: {
+						code: 'BAD_REQUEST'
+					}
+				}
+			}
+		])
 	})
 
-	it('receive context', async () => {
-		const app2 = new Elysia().use(
-			trpc(router, {
-				createContext
-			})
-		)
+	it('handle "internal server error"', async () => {
+		const res = await appErros
+			.handle(createRequest('/trpc/505'))
+			.then((r) => r.json())
 
-		const res = (await app2
-			.handle(createRequest('/trpc/context'))
-			.then((r) => r.json())) as any
-
-		expect(res.result.data).toEqual(createContext())
-	})
-
-	it('support merged router', async () => {
-		const app2 = new Elysia().use(trpc(mergedRouter))
-
-		const res = (await app2
-			.handle(
-				createRequest(
-					'/trpc/main.greet?batch=1&input=%7B%220%22%3A%22a%22%7D'
-				)
-			)
-			.then((r) => r.json())) as any
-
-		expect(res[0].result.data).toBe('a')
+		expect(res).toMatchObject({
+			error: {
+				code: -32603,
+				data: {
+					httpStatus: 500,
+					path: '505',
+					code: 'INTERNAL_SERVER_ERROR'
+				},
+				message: 'Something wrong'
+			}
+		})
 	})
 })
