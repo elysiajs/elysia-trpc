@@ -43,7 +43,7 @@ export const trpc =
     ) =>
     (eri: Elysia) => {
         let app = eri
-            .onParse(async ({ request: { url } }) => {
+            .onParse({ as: 'global' }, async ({ request: { url } }) => {
                 if (getPath(url).startsWith(endpoint)) return true
             })
             .get(`${endpoint}/*`, async ({ query, request }) => {
@@ -77,8 +77,8 @@ export const trpc =
                     let observer: Unsubscribable | undefined
 
                     for (const incoming of messages) {
-                        if(!incoming.method || !incoming.params) {
-                          continue
+                        if (!incoming.method || !incoming.params) {
+                            continue
                         }
 
                         if (incoming.method === 'subscription.stop') {
