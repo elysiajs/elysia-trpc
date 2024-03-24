@@ -99,7 +99,7 @@ export const trpc =
                         const result = await callTRPCProcedure({
                             procedures: router._def.procedures,
                             path: incoming.params.path,
-                            getRawInput: async () => incoming.params.input?.json,
+                            getRawInput: async () => incoming.params.input,
                             type: incoming.method,
                             ctx: {}
                         })

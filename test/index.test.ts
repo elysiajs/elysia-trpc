@@ -136,9 +136,7 @@ describe('TRPC', () => {
             params: {
                 path: 'online',
                 input: {
-                    json: {
                         username: 'elysia'
-                    }
                 }
             }
         })
@@ -180,9 +178,7 @@ describe('TRPC', () => {
             params: {
                 path: 'online',
                 input: {
-                    json: {
                         username: 'elysia'
-                    }
                 }
             }
         })
