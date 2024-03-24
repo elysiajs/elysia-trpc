@@ -93,7 +93,7 @@ describe('TRPC Mutations', () => {
 		expect(res).toStrictEqual([{ result: { data: firstRecord } }])
 	})
 
-	it('handle multi mutation', async () => {
+	it('handle multiple mutations', async () => {
 		const res = await appMutation
 			.handle(
 				createRequest('/trpc/signIn,signIn?batch=1', {
@@ -179,7 +179,7 @@ describe('TRPC Queries', () => {
 		expect(res).toStrictEqual([{ result: { data: 'a' } }])
 	})
 
-	it('handle multi query', async () => {
+	it('handle multiple queries', async () => {
 		const res = (await appQuery
 			.handle(createRequest(`/trpc/greet,greet?${multiQueryParams}`))
 			.then((r) => r.json())) as any[]
