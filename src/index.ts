@@ -1,10 +1,10 @@
 import { Elysia, getSchemaValidator } from 'elysia'
 
-import { callTRPCProcedure, TRPCError, type AnyTRPCRouter, getErrorShape } from '@trpc/server'
+import { callTRPCProcedure, getErrorShape, TRPCError, type AnyTRPCRouter } from '@trpc/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { isObservable, Unsubscribable } from '@trpc/server/observable'
 
-import { transformTRPCResponse, getTRPCErrorFromUnknown } from './utils'
+import { getTRPCErrorFromUnknown, transformTRPCResponse } from './utils'
 
 import type { TSchema } from '@sinclair/typebox'
 import type { TRPCClientIncomingRequest, TRPCOptions } from './types'
@@ -65,8 +65,7 @@ export const trpc =
 
         const observers: Map<string, Unsubscribable> = new Map()
 
-        // @ts-ignore
-        if (app.wsRouter)
+        if (app.ws) {
             app.ws<any, any, any>(endpoint, {
                 async message(ws: any, message: any) {
                     const messages: TRPCClientIncomingRequest[] = Array.isArray(
@@ -193,6 +192,7 @@ export const trpc =
                     observers.delete(ws.id.toString())
                 }
             })
+        }
 
         return app
     }

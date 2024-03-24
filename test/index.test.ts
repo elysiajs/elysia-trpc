@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia'
-import { trpc, compile as c } from '../src'
+import { compile as c, trpc } from '../src'
 
-import { Expect, describe, expect, it } from 'bun:test'
 import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
+import { describe, expect, it } from 'bun:test'
 import { EventEmitter } from 'stream'
 
 const createContext = () => ({
