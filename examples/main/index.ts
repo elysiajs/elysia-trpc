@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { trpc, compile as c } from '../src'
+import { trpc, compile as c } from '../../src'
 
 import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
