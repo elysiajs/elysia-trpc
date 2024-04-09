@@ -8,7 +8,7 @@ import {
 } from '@trpc/client'
 import type { Router } from '.'
 
-import './poliyfills'
+import './polyfills'
 
 const client = createTRPCProxyClient<Router>({
     links: [
