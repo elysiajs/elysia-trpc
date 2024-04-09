@@ -1,5 +1,5 @@
-import { Elysia, ws, t } from 'elysia'
-import { trpc, compile as c } from '../src'
+import { Elysia, t } from 'elysia'
+import { trpc, compile as c } from '../../src'
 
 import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
@@ -34,7 +34,6 @@ const router = p.router({
 export type Router = typeof router
 
 new Elysia()
-    .use(ws())
     .get('/', () => 'tRPC')
     .use(
         trpc(router, {
