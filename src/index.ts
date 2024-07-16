@@ -102,7 +102,7 @@ export const trpc =
                             path: incoming.params.path,
                             rawInput: incoming.params.input?.json,
                             type: incoming.method,
-                            ctx: {}
+                            ctx: await options.createContext?.({req: ws.data.request, resHeaders: new Headers()})
                         })
 
                         if (incoming.method !== 'subscription')
@@ -150,7 +150,7 @@ export const trpc =
                                     )
                                 )
                             },
-                            error(err) {
+                            async error(err) {
                                 ws.send(
                                     JSON.stringify(
                                         transformTRPCResponse(router, {
@@ -163,7 +163,7 @@ export const trpc =
                                                 type: incoming.method as 'subscription',
                                                 path: incoming.params.path,
                                                 input: incoming.params.input,
-                                                ctx: {}
+                                                ctx: await options.createContext?.({req: ws.data.request, resHeaders: new Headers()})
                                             })
                                         })
                                     )
