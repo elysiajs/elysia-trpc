@@ -14,7 +14,7 @@ export function compile<T extends TSchema>(schema: T) {
     if (!check) throw new Error('Invalid schema')
 
     return (value: unknown) => {
-        if (check.Check(value)) return value
+        if (check.Check(value)) return value as (typeof schema)["static"]
 
         const { path, message } = [...check.Errors(value)][0]
 
